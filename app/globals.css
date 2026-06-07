@@ -1,15 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  :root {
-    scroll-behavior: smooth;
-  }
-  .font-serif {
-    font-family: var(--font-serif), Georgia, serif;
-  }
-  .font-sans {
-    font-family: var(--font-sans), system-ui, sans-serif;
-  }
+@theme {
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Montserrat", system-ui, sans-serif;
 }
