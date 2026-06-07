@@ -272,7 +272,7 @@ export default function Home() {
             </div>
           </FadeIn>
           <div className="md:col-span-3 border-t border-[#e5e2e1] pt-8 text-center text-sm text-[#454742]">
-            © 2024 The Cheesecake House. Handcrafted with precision.
+            © 2026 The Cheesecake House. Handcrafted with precision.
           </div>
         </div>
       </footer>
