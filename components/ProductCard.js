@@ -1,5 +1,5 @@
 export default function ProductCard({ product }) {
-  const WHATSAPP_NUMBER = '94771234567' // ← put your number here (no + or spaces)
+  const WHATSAPP_NUMBER = '+94713722344' // ← put your number here (no + or spaces)
   const message = `Hi! I'd like to order the ${product.name} cheesecake (Rs. ${product.price.toLocaleString()}). Is it available?`
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
 
