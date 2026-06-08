@@ -121,8 +121,8 @@ export default function Home() {
             alt="Cheesecake"
             className={`w-full h-full object-cover transition-transform duration-[8000ms] ease-out ${heroVisible ? 'scale-105' : 'scale-100'}`}
           />
-          <div className="absolute inset-0 bg-[#fcf8f7]/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#fcf8f7] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#fcf8f7]/80 via-transparent to-transparent" />
         </div>
         <div className="relative z-10 max-w-4xl mx-auto px-6 text-center pt-24">
           <div className={`transition-all duration-1000 ease-out ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
