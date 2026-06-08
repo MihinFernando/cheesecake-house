@@ -46,7 +46,7 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false)
   const [heroVisible, setHeroVisible] = useState(false)
 
-  const WHATSAPP = '+94713722344' // CHANGE THIS
+  const WHATSAPP = '+94713722344'
 
   useEffect(() => {
     // Hero entrance animation
@@ -76,11 +76,18 @@ export default function Home() {
         scrolled ? 'bg-white/95 backdrop-blur-md shadow-md py-2' : 'bg-transparent py-4'
       }`}>
         <div className="flex justify-between items-center max-w-7xl mx-auto px-6 md:px-16">
-          <a href="#" className={`font-serif font-bold transition-all duration-500 ${
-            scrolled ? 'text-xl text-[#735c00]' : 'text-2xl md:text-3xl text-[#735c00]'
-          }`}>
-            The Cheesecake House
+          
+          {/* LOGO REPLACEMENT HERE */}
+          <a href="#" className="flex items-center transition-all duration-500">
+            <img 
+              src="/logo.png" 
+              alt="The Cheesecake House" 
+              className={`object-contain transition-all duration-500 ${
+                scrolled ? 'h-10 md:h-12' : 'h-14 md:h-20'
+              }`}
+            />
           </a>
+
           <div className="hidden md:flex gap-8 items-center">
             {[['#menu','Menu'],['#reviews','Reviews'],['#contact','Contact']].map(([href,label]) => (
               <a key={href} href={href}
@@ -241,7 +248,12 @@ export default function Home() {
       <footer id="contact" className="bg-[#f7f3f2] py-20">
         <div className="max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-3 gap-10">
           <FadeIn direction="right">
-            <p className="font-serif text-2xl font-bold text-[#735c00] mb-3">The Cheesecake House</p>
+            {/* LOGO REPLACEMENT HERE AS WELL */}
+            <img 
+              src="/logo.png" 
+              alt="The Cheesecake House" 
+              className="h-16 object-contain mb-3"
+            />
             <p className="text-sm text-[#454742]">Handcrafted with love. Baked fresh every day.</p>
           </FadeIn>
           <FadeIn delay={100}>
@@ -257,7 +269,6 @@ export default function Home() {
             <h4 className="text-xs font-bold tracking-widest uppercase text-[#1c1b1b] mb-4">Get in Touch</h4>
             <div className="flex flex-col gap-2 text-sm text-[#454742] mb-4">
               <p className="hover:text-[#735c00] transition-colors">🕐 Open Daily: 7am-8pm</p>
-              {/* <p className="hover:text-[#735c00] transition-colors">🚚 Delivery: Island Wide</p> */}
             </div>
             <div className="flex gap-4">
               {[
