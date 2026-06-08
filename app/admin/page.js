@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const ADMIN_PASSWORD = 'cheesecake123' // ← CHANGE THIS
+const ADMIN_PASSWORD = 'charith123'
 
 // ── small reusable input components ──────────────────────────────
 function Field({ label, hint, children }) {
