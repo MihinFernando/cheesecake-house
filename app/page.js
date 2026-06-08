@@ -117,11 +117,11 @@ export default function Home() {
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=1600&q=80"
+            src="https://ptojaktjqhxmlbryefzc.supabase.co/storage/v1/object/public/images/hero%20image.png"
             alt="Cheesecake"
             className={`w-full h-full object-cover transition-transform duration-[8000ms] ease-out ${heroVisible ? 'scale-105' : 'scale-100'}`}
           />
-          <div className="absolute inset-0 bg-[#fcf8f7]/50 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-[#fcf8f7]/30" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#fcf8f7] via-transparent to-transparent" />
         </div>
         <div className="relative z-10 max-w-4xl mx-auto px-6 text-center pt-24">
