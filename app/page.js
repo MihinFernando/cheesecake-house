@@ -73,17 +73,17 @@ export default function Home() {
 
       {/* NAV — shrinks and gets shadow on scroll */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-        scrolled ? 'bg-white/95 backdrop-blur-md shadow-md py-2' : 'bg-transparent py-4'
+        scrolled ? 'bg-white/95 backdrop-blur-md shadow-md py-2' : 'bg-transparent py-4 bg-gradient-to-b from-black/20 to-transparent'
       }`}>
         <div className="flex justify-between items-center max-w-7xl mx-auto px-6 md:px-16">
           
-          {/* UPDATED LOGO SIZING FOR LANDSCAPE */}
+          {/* UPDATED LOGO: Added drop-shadow and increased size */}
           <a href="#" className="flex items-center transition-all duration-500">
             <img 
               src="/logo.png" 
               alt="The Cheesecake House" 
-              className={`w-auto object-contain transition-all duration-500 ${
-                scrolled ? 'h-8 md:h-10' : 'h-12 md:h-16'
+              className={`w-auto object-contain transition-all duration-500 drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)] ${
+                scrolled ? 'h-10 md:h-12' : 'h-16 md:h-24'
               }`}
             />
           </a>
@@ -91,17 +91,17 @@ export default function Home() {
           <div className="hidden md:flex gap-8 items-center">
             {[['#menu','Menu'],['#reviews','Reviews'],['#contact','Contact']].map(([href,label]) => (
               <a key={href} href={href}
-                className="text-sm font-semibold tracking-wide text-[#454742] hover:text-[#735c00] transition-colors relative group">
+                className={`text-sm font-semibold tracking-wide transition-colors relative group ${scrolled ? 'text-[#454742] hover:text-[#735c00]' : 'text-white/90 hover:text-white drop-shadow-md'}`}>
                 {label}
-                <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-[#735c00] transition-all duration-300 group-hover:w-full" />
+                <span className={`absolute -bottom-0.5 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${scrolled ? 'bg-[#735c00]' : 'bg-white'}`} />
               </a>
             ))}
             <a href="#menu"
-              className="bg-[#735c00] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 hover:bg-[#5a4700] hover:scale-105 hover:shadow-lg active:scale-95">
+              className="bg-[#735c00] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 hover:bg-[#5a4700] hover:scale-105 hover:shadow-lg active:scale-95 shadow-md">
               Order Now
             </a>
           </div>
-          <button className="md:hidden text-[#454742] transition-transform duration-200 active:scale-90"
+          <button className={`md:hidden transition-transform duration-200 active:scale-90 ${scrolled ? 'text-[#454742]' : 'text-white drop-shadow-md'}`}
             onClick={() => setMenuOpen(!menuOpen)}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -114,7 +114,7 @@ export default function Home() {
           <div className="bg-white px-6 pb-4 flex flex-col gap-4 border-t border-[#e5e2e1]">
             {[['#menu','Menu'],['#reviews','Reviews'],['#contact','Contact']].map(([href,label]) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)}
-                className="text-sm font-semibold text-[#454742] hover:text-[#735c00] transition-colors">{label}</a>
+                className="text-sm font-semibold text-[#454742] hover:text-[#735c00] transition-colors pt-4">{label}</a>
             ))}
           </div>
         </div>
@@ -245,11 +245,11 @@ export default function Home() {
       <footer id="contact" className="bg-[#f7f3f2] py-20">
         <div className="max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-3 gap-10">
           <FadeIn direction="right">
-            {/* UPDATED LOGO SIZING FOR LANDSCAPE IN FOOTER */}
+            {/* UPDATED LOGO: Sizing for landscape and subtle drop shadow */}
             <img 
               src="/logo.png" 
               alt="The Cheesecake House" 
-              className="w-auto h-12 md:h-16 object-contain mb-4"
+              className="w-auto h-16 md:h-20 object-contain mb-4 drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
             />
             <p className="text-sm text-[#454742]">Handcrafted with love. Baked fresh every day.</p>
           </FadeIn>
