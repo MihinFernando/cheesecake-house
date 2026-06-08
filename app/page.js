@@ -121,22 +121,24 @@ export default function Home() {
             alt="Cheesecake"
             className={`w-full h-full object-cover transition-transform duration-[8000ms] ease-out ${heroVisible ? 'scale-105' : 'scale-100'}`}
           />
-          <div className="absolute inset-0 bg-black/35" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#fcf8f7]/80 via-transparent to-transparent" />
+          {/* Barely there overlay just to soften the image slightly */}
+          <div className="absolute inset-0 bg-white/20" />
+          {/* Smooth blend into the bottom section */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#fcf8f7] via-[#fcf8f7]/50 to-transparent" />
         </div>
         <div className="relative z-10 max-w-4xl mx-auto px-6 text-center pt-24">
           <div className={`transition-all duration-1000 ease-out ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <span className="inline-block mb-4 px-4 py-1 border border-white/60 rounded-full text-xs font-bold tracking-widest uppercase text-white/90">
+            <span className="inline-block mb-4 px-4 py-1 border border-[#735c00] rounded-full text-xs font-bold tracking-widest uppercase text-[#735c00]">
               Baked Fresh Daily
             </span>
           </div>
           <div className={`transition-all duration-1000 ease-out delay-200 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <h1 className="font-serif text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
+            <h1 className="font-serif text-4xl md:text-6xl font-bold text-[#1c1b1b] mb-6 leading-tight">
               Handcrafted cheesecakes, baked with love.
             </h1>
           </div>
           <div className={`transition-all duration-1000 ease-out delay-300 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <p className="text-lg text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg text-[#454742] mb-10 max-w-2xl mx-auto leading-relaxed font-medium">
               We bake our melt-in-your-mouth cheesecakes fresh every day using only the best ingredients. Grab a slice (or a whole cake) for pickup or local delivery.
             </p>
           </div>
