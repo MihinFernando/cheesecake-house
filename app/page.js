@@ -73,17 +73,19 @@ export default function Home() {
 
       {/* NAV — shrinks and gets shadow on scroll */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-        scrolled ? 'bg-white/95 backdrop-blur-md shadow-md py-2' : 'bg-transparent py-4 bg-gradient-to-b from-black/20 to-transparent'
+        scrolled ? 'bg-white/95 backdrop-blur-md shadow-md py-2' : 'py-4 bg-gradient-to-b from-black/60 via-black/30 to-transparent'
       }`}>
         <div className="flex justify-between items-center max-w-7xl mx-auto px-6 md:px-16">
           
-          {/* UPDATED LOGO: Added drop-shadow and increased size */}
+          {/* UPDATED LOGO: Much stronger dark drop-shadow */}
           <a href="#" className="flex items-center transition-all duration-500">
             <img 
               src="/logo.png" 
               alt="The Cheesecake House" 
-              className={`w-auto object-contain transition-all duration-500 drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)] ${
-                scrolled ? 'h-10 md:h-12' : 'h-16 md:h-24'
+              className={`w-auto object-contain transition-all duration-500 ${
+                scrolled 
+                  ? 'h-10 md:h-12 drop-shadow-none' 
+                  : 'h-16 md:h-24 drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]'
               }`}
             />
           </a>
@@ -91,7 +93,11 @@ export default function Home() {
           <div className="hidden md:flex gap-8 items-center">
             {[['#menu','Menu'],['#reviews','Reviews'],['#contact','Contact']].map(([href,label]) => (
               <a key={href} href={href}
-                className={`text-sm font-semibold tracking-wide transition-colors relative group ${scrolled ? 'text-[#454742] hover:text-[#735c00]' : 'text-white/90 hover:text-white drop-shadow-md'}`}>
+                className={`text-sm font-semibold tracking-wide transition-colors relative group ${
+                  scrolled 
+                    ? 'text-[#454742] hover:text-[#735c00]' 
+                    : 'text-white hover:text-[#f7f3f2] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]'
+                }`}>
                 {label}
                 <span className={`absolute -bottom-0.5 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${scrolled ? 'bg-[#735c00]' : 'bg-white'}`} />
               </a>
