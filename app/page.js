@@ -256,8 +256,8 @@ export default function Home() {
           <FadeIn delay={200} direction="left">
             <h4 className="text-xs font-bold tracking-widest uppercase text-[#1c1b1b] mb-4">Get in Touch</h4>
             <div className="flex flex-col gap-2 text-sm text-[#454742] mb-4">
-              <p className="hover:text-[#735c00] transition-colors">🕐 Open Daily: 24 hours</p>
-              <p className="hover:text-[#735c00] transition-colors">🚚 Delivery: Island Wide</p>
+              <p className="hover:text-[#735c00] transition-colors">🕐 Open Daily: 7am-8pm</p>
+              {/* <p className="hover:text-[#735c00] transition-colors">🚚 Delivery: Island Wide</p> */}
             </div>
             <div className="flex gap-4">
               {[
