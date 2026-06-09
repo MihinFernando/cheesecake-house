@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 
 // Hook to detect when element enters viewport
@@ -79,9 +80,11 @@ export default function Home() {
           
           {/* UPDATED LOGO: Much stronger dark drop-shadow */}
           <a href="#" className="flex items-center transition-all duration-500">
-            <img 
+            <Image
               src="/logo.png" 
               alt="The Cheesecake House" 
+              width={360}
+              height={160}
               className={`w-auto object-contain transition-all duration-500 ${
                 scrolled 
                   ? 'h-10 md:h-12 drop-shadow-none' 
@@ -129,9 +132,13 @@ export default function Home() {
       {/* HERO — fades in on load */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img
+          <Image
             src="https://ptojaktjqhxmlbryefzc.supabase.co/storage/v1/object/public/images/hero%20image.png"
             alt="Cheesecake"
+            fill
+            priority
+            unoptimized
+            sizes="100vw"
             className={`w-full h-full object-cover transition-transform duration-[8000ms] ease-out ${heroVisible ? 'scale-105' : 'scale-100'}`}
           />
           <div className="absolute inset-0 bg-white/20" />
@@ -193,7 +200,7 @@ export default function Home() {
                   <article className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col group cursor-pointer hover:-translate-y-2">
                     <div className="aspect-square overflow-hidden relative">
                       {p.image_url
-                        ? <img src={p.image_url} alt={p.name}
+                        ? <Image src={p.image_url} alt={p.name} fill unoptimized sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                         : <div className="w-full h-full bg-[#f1edec] flex items-center justify-center text-6xl
                             group-hover:scale-110 transition-transform duration-500">🍰</div>
@@ -237,8 +244,8 @@ export default function Home() {
             {reviews.map((r, i) => (
               <FadeIn key={r.id} delay={i * 150} direction="up">
                 <div className="bg-[#fcf8f7] p-8 rounded-2xl border border-[#e5e2e1] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 h-full">
-                  <span className="text-5xl text-[#735c00] opacity-20 font-serif leading-none block mb-2">"</span>
-                  <p className="text-[#1c1b1b] italic leading-relaxed mb-6">"{r.review_text}"</p>
+                  <span className="text-5xl text-[#735c00] opacity-20 font-serif leading-none block mb-2">&ldquo;</span>
+                  <p className="text-[#1c1b1b] italic leading-relaxed mb-6">&ldquo;{r.review_text}&rdquo;</p>
                   <p className="text-sm font-bold text-[#735c00]">— {r.reviewer_name}</p>
                 </div>
               </FadeIn>
@@ -252,9 +259,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 md:px-16 grid grid-cols-1 md:grid-cols-3 gap-10">
           <FadeIn direction="right">
             {/* UPDATED LOGO: Sizing for landscape and subtle drop shadow */}
-            <img 
+            <Image
               src="/logo.png" 
               alt="The Cheesecake House" 
+              width={360}
+              height={160}
               className="w-auto h-16 md:h-20 object-contain mb-4 drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
             />
             <p className="text-sm text-[#454742]">Handcrafted with love. Baked fresh every day.</p>

@@ -1,8 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
-
-const ADMIN_PASSWORD = 'charith123'
 
 // ── small reusable input components ──────────────────────────────
 function Field({ label, hint, children }) {
@@ -44,8 +43,11 @@ function Toggle({ value, onChange, label }) {
 
 // ─────────────────────────────────────────────────────────────────
 export default function AdminPage() {
+  const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
-  const [loggedIn, setLoggedIn]   = useState(false)
+  const [session, setSession]     = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authError, setAuthError] = useState('')
   const [tab, setTab]             = useState('products') // 'products' | 'reviews'
 
   // products state
@@ -68,25 +70,39 @@ export default function AdminPage() {
   const [newReview, setNewReview] = useState({ reviewer_name: '', review_text: '' })
   const [addingReview, setAddingReview]   = useState(false)
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
-    if (password === ADMIN_PASSWORD) setLoggedIn(true)
-    else alert('Wrong password')
+    setAuthLoading(true)
+    setAuthError('')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) setAuthError(error.message)
+    setAuthLoading(false)
   }
 
   useEffect(() => {
-    if (!loggedIn) return
-    fetchProducts()
-    fetchReviews()
-  }, [loggedIn])
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      setAuthLoading(false)
+    })
 
-  const fetchProducts = () =>
-    supabase.from('products').select('*').order('created_at')
-      .then(({ data }) => setProducts(data || []))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+    })
 
-  const fetchReviews = () =>
-    supabase.from('reviews').select('*').order('created_at')
-      .then(({ data }) => setReviews(data || []))
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
+
+    Promise.all([
+      supabase.from('products').select('*').order('created_at'),
+      supabase.from('reviews').select('*').order('created_at'),
+    ]).then(([productsResult, reviewsResult]) => {
+      setProducts(productsResult.data || [])
+      setReviews(reviewsResult.data || [])
+    })
+  }, [session])
 
   // ── PRODUCT actions ────────────────────────────────────────────
   const updateProduct = (id, field, value) =>
@@ -169,18 +185,31 @@ export default function AdminPage() {
   }
 
   // ── LOGIN SCREEN ───────────────────────────────────────────────
-  if (!loggedIn) return (
+  if (authLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#f7f3f2] text-[#735c00] font-semibold">
+      Loading...
+    </div>
+  )
+
+  if (!session) return (
     <div className="min-h-screen flex items-center justify-center bg-[#f7f3f2]">
       <div className="bg-white p-10 rounded-2xl shadow-sm border border-[#e5e2e1] w-full max-w-sm">
         <p className="font-serif text-3xl font-bold text-[#735c00] mb-1">Admin</p>
         <p className="text-sm text-[#454742] mb-8">The Cheesecake House</p>
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          <input type="email" placeholder="Admin email" value={email}
+            onChange={e => setEmail(e.target.value)}
+            required autoComplete="email"
+            className={inp} />
           <input type="password" placeholder="Enter password" value={password}
             onChange={e => setPassword(e.target.value)}
+            required autoComplete="current-password"
             className={inp} />
+          {authError && <p className="text-sm text-red-600">{authError}</p>}
           <button type="submit"
+            disabled={authLoading}
             className="bg-[#735c00] text-white py-3 rounded-xl font-semibold hover:opacity-80 transition-opacity">
-            Login
+            {authLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
       </div>
@@ -197,10 +226,16 @@ export default function AdminPage() {
           <p className="font-serif text-xl font-bold text-[#735c00]">The Cheesecake House</p>
           <p className="text-xs text-[#767872]">Admin Dashboard</p>
         </div>
-        <a href="/" target="_blank"
-          className="text-sm text-[#735c00] font-semibold hover:underline">
-          View Website →
-        </a>
+        <div className="flex items-center gap-4">
+          <a href="/" target="_blank"
+            className="text-sm text-[#735c00] font-semibold hover:underline">
+            View Website →
+          </a>
+          <button onClick={() => supabase.auth.signOut()}
+            className="text-sm text-red-500 font-semibold hover:underline">
+            Sign Out
+          </button>
+        </div>
       </div>
 
       <div className="max-w-4xl mx-auto py-8 px-6 md:px-0">
@@ -279,7 +314,7 @@ export default function AdminPage() {
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-4">
                     {product.image_url
-                      ? <img src={product.image_url} alt={product.name} className="w-14 h-14 rounded-xl object-cover" />
+                      ? <Image src={product.image_url} alt={product.name} width={56} height={56} unoptimized className="w-14 h-14 rounded-xl object-cover" />
                       : <div className="w-14 h-14 rounded-xl bg-[#f1edec] flex items-center justify-center text-2xl">🍰</div>
                     }
                     <div>
