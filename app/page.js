@@ -133,7 +133,7 @@ export default function Home() {
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
-            src="https://ptojaktjqhxmlbryefzc.supabase.co/storage/v1/object/public/images/hero%20image.png"
+            src="https://ptojaktjqhxmlbryefzc.supabase.co/storage/v1/object/public/images/hero%20image.webp"
             alt="Cheesecake"
             fill
             priority
