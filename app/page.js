@@ -3,6 +3,8 @@ import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 
+const NAV_LINKS = [['#offers','Offers'],['#menu','Menu'],['#reviews','Reviews'],['#contact','Contact']]
+
 // Hook to detect when element enters viewport
 function useInView(threshold = 0.15) {
   const ref = useRef(null)
@@ -69,6 +71,10 @@ export default function Home() {
   const waLink = (name, price) =>
     `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Hi! I'd love to order the ${name} cheesecake (Rs. ${price?.toLocaleString()}). Is it available?`)}`
 
+  const offers = products.filter(product =>
+    /off|offer|deal|special|discount/i.test(product.label || '')
+  )
+
   return (
     <div className="bg-[#fcf8f7] text-[#1c1b1b] antialiased scroll-smooth">
 
@@ -94,7 +100,7 @@ export default function Home() {
           </a>
 
           <div className="hidden md:flex gap-8 items-center">
-            {[['#menu','Menu'],['#reviews','Reviews'],['#contact','Contact']].map(([href,label]) => (
+            {NAV_LINKS.map(([href,label]) => (
               <a key={href} href={href}
                 className={`text-sm font-semibold tracking-wide transition-colors relative group ${
                   scrolled 
@@ -121,7 +127,7 @@ export default function Home() {
         {/* Mobile menu */}
         <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="bg-white px-6 pb-4 flex flex-col gap-4 border-t border-[#e5e2e1]">
-            {[['#menu','Menu'],['#reviews','Reviews'],['#contact','Contact']].map(([href,label]) => (
+            {NAV_LINKS.map(([href,label]) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)}
                 className="text-sm font-semibold text-[#454742] hover:text-[#735c00] transition-colors pt-4">{label}</a>
             ))}
@@ -176,6 +182,58 @@ export default function Home() {
           <div className="w-6 h-10 border-2 border-[#735c00]/40 rounded-full flex justify-center pt-2">
             <div className="w-1 h-2 bg-[#735c00]/60 rounded-full animate-bounce" />
           </div>
+        </div>
+      </section>
+
+      {/* OFFERS */}
+      <section id="offers" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6 md:px-16">
+          <FadeIn className="text-center mb-16">
+            <span className="inline-block mb-4 px-4 py-1 bg-[#735c00] text-white rounded-full text-xs font-bold tracking-widest uppercase">
+              Limited Time
+            </span>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-[#1c1b1b] mb-4">Special Offers</h2>
+            <p className="text-[#454742] max-w-xl mx-auto">Enjoy a little extra sweetness with our latest cheesecake deals.</p>
+            <div className="w-16 h-1 bg-[#735c00] rounded-full mx-auto mt-6" />
+          </FadeIn>
+
+          {offers.length === 0 ? (
+            <FadeIn>
+              <div className="max-w-2xl mx-auto text-center bg-[#fcf8f7] border border-[#e5e2e1] rounded-2xl px-6 py-12">
+                <p className="font-serif text-2xl font-bold text-[#1c1b1b] mb-2">Fresh offers are coming soon</p>
+                <p className="text-sm text-[#454742]">Check back shortly for our next delicious deal.</p>
+              </div>
+            </FadeIn>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {offers.map((offer, i) => (
+                <FadeIn key={offer.id} delay={i * 100}>
+                  <article className="bg-[#fcf8f7] border border-[#e5e2e1] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 group">
+                    <div className="relative aspect-[4/3] overflow-hidden">
+                      {offer.image_url ? (
+                        <Image src={offer.image_url} alt={offer.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw"
+                          className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                      ) : (
+                        <div className="w-full h-full bg-[#f1edec] flex items-center justify-center font-serif text-2xl font-bold text-[#735c00]">Special Offer</div>
+                      )}
+                      <span className="absolute top-4 left-4 bg-[#735c00] text-white text-xs font-bold px-4 py-2 rounded-full shadow-md">
+                        {offer.label}
+                      </span>
+                    </div>
+                    <div className="p-6 text-center">
+                      <h3 className="font-serif text-xl font-bold text-[#1c1b1b] mb-2">{offer.name}</h3>
+                      <p className="text-sm text-[#454742] mb-4">{offer.description}</p>
+                      <p className="text-[#735c00] font-bold mb-5">Rs. {offer.price?.toLocaleString()}</p>
+                      <a href={waLink(offer.name, offer.price)} target="_blank" rel="noopener noreferrer"
+                        className="inline-block bg-[#735c00] text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-[#5a4700] active:scale-95 transition-all duration-300">
+                        Claim Offer
+                      </a>
+                    </div>
+                  </article>
+                </FadeIn>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -271,7 +329,7 @@ export default function Home() {
           <FadeIn delay={100}>
             <h4 className="text-xs font-bold tracking-widest uppercase text-[#1c1b1b] mb-4">Links</h4>
             <div className="flex flex-col gap-2">
-              {[['#menu','Menu'],['#reviews','Reviews'],['#contact','Contact']].map(([href,label]) => (
+              {NAV_LINKS.map(([href,label]) => (
                 <a key={href} href={href}
                   className="text-sm text-[#454742] hover:text-[#735c00] hover:translate-x-1 transition-all duration-200 inline-block">{label}</a>
               ))}
