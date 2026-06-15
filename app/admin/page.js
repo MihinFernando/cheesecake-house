@@ -48,7 +48,7 @@ export default function AdminPage() {
   const [session, setSession]     = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [authError, setAuthError] = useState('')
-  const [tab, setTab]             = useState('products') // 'products' | 'reviews'
+  const [tab, setTab]             = useState('products') // 'products' | 'offers' | 'reviews'
 
   // products state
   const [products, setProducts]   = useState([])
@@ -60,6 +60,17 @@ export default function AdminPage() {
     name: '', description: '', price: '', image_url: '', label: '', is_available: true
   })
   const [addingProduct, setAddingProduct] = useState(false)
+
+  // offers state
+  const [offers, setOffers]       = useState([])
+  const [savingOffer, setSavingOffer] = useState(null)
+  const [savedOffer, setSavedOffer] = useState(null)
+  const [deletingOffer, setDeletingOffer] = useState(null)
+  const [showAddOffer, setShowAddOffer] = useState(false)
+  const [newOffer, setNewOffer] = useState({
+    title: '', description: '', badge: '', image_url: '', is_active: true
+  })
+  const [addingOffer, setAddingOffer] = useState(false)
 
   // reviews state
   const [reviews, setReviews]     = useState([])
@@ -97,9 +108,11 @@ export default function AdminPage() {
 
     Promise.all([
       supabase.from('products').select('*').order('created_at'),
+      supabase.from('offers').select('*').order('created_at', { ascending: false }),
       supabase.from('reviews').select('*').order('created_at'),
-    ]).then(([productsResult, reviewsResult]) => {
+    ]).then(([productsResult, offersResult, reviewsResult]) => {
       setProducts(productsResult.data || [])
+      setOffers(offersResult.data || [])
       setReviews(reviewsResult.data || [])
     })
   }, [session])
@@ -149,6 +162,47 @@ export default function AdminPage() {
   }
 
   // ── REVIEW actions ─────────────────────────────────────────────
+  const updateOffer = (id, field, value) =>
+    setOffers(prev => prev.map(offer => offer.id === id ? { ...offer, [field]: value } : offer))
+
+  const saveOffer = async (offer) => {
+    setSavingOffer(offer.id)
+    await supabase.from('offers').update({
+      title: offer.title,
+      description: offer.description,
+      badge: offer.badge,
+      image_url: offer.image_url,
+      is_active: offer.is_active,
+    }).eq('id', offer.id)
+    setSavingOffer(null)
+    setSavedOffer(offer.id)
+    setTimeout(() => setSavedOffer(null), 2000)
+  }
+
+  const deleteOffer = async (id) => {
+    if (!confirm('Delete this offer?')) return
+    setDeletingOffer(id)
+    await supabase.from('offers').delete().eq('id', id)
+    setOffers(prev => prev.filter(offer => offer.id !== id))
+    setDeletingOffer(null)
+  }
+
+  const addOffer = async () => {
+    if (!newOffer.title) return alert('Offer title is required.')
+    setAddingOffer(true)
+    const { data } = await supabase.from('offers').insert({
+      title: newOffer.title,
+      description: newOffer.description,
+      badge: newOffer.badge || null,
+      image_url: newOffer.image_url || null,
+      is_active: newOffer.is_active,
+    }).select()
+    if (data) setOffers(prev => [...data, ...prev])
+    setNewOffer({ title: '', description: '', badge: '', image_url: '', is_active: true })
+    setShowAddOffer(false)
+    setAddingOffer(false)
+  }
+
   const updateReview = (id, field, value) =>
     setReviews(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r))
 
@@ -244,6 +298,9 @@ export default function AdminPage() {
         <div className="flex gap-2 mb-8 bg-white p-1.5 rounded-2xl border border-[#e5e2e1] w-fit">
           <Tab active={tab === 'products'} onClick={() => setTab('products')}>
             🍰 Products ({products.length})
+          </Tab>
+          <Tab active={tab === 'offers'} onClick={() => setTab('offers')}>
+            Offers ({offers.length})
           </Tab>
           <Tab active={tab === 'reviews'} onClick={() => setTab('reviews')}>
             ⭐ Reviews ({reviews.length})
@@ -372,6 +429,107 @@ export default function AdminPage() {
         )}
 
         {/* ── REVIEWS TAB ── */}
+        {tab === 'offers' && (
+          <div className="space-y-6">
+            {!showAddOffer && (
+              <button onClick={() => setShowAddOffer(true)}
+                className="w-full border-2 border-dashed border-[#735c00]/30 rounded-2xl py-5 text-[#735c00] font-semibold text-sm hover:border-[#735c00]/60 hover:bg-[#735c00]/5 transition-all duration-200 flex items-center justify-center gap-2">
+                <span className="text-xl">+</span> Add New Offer
+              </button>
+            )}
+
+            {showAddOffer && (
+              <div className="bg-white border-2 border-[#735c00]/30 rounded-2xl p-6 shadow-sm">
+                <h2 className="font-serif text-lg font-bold text-[#735c00] mb-5">New Offer</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="Offer Title *">
+                    <input value={newOffer.title} onChange={e => setNewOffer({...newOffer, title: e.target.value})}
+                      placeholder="e.g. Weekend Celebration Box" className={inp} />
+                  </Field>
+                  <Field label="Badge" hint="(e.g. 20% Off, Limited Time)">
+                    <input value={newOffer.badge} onChange={e => setNewOffer({...newOffer, badge: e.target.value})}
+                      placeholder="Special Offer" className={inp} />
+                  </Field>
+                  <Field label="Image URL">
+                    <input value={newOffer.image_url} onChange={e => setNewOffer({...newOffer, image_url: e.target.value})}
+                      placeholder="https://..." className={inp} />
+                  </Field>
+                  <Field label="Description">
+                    <textarea value={newOffer.description} rows={2}
+                      onChange={e => setNewOffer({...newOffer, description: e.target.value})}
+                      placeholder="Explain what is included in the offer..." className={`${inp} resize-none`} />
+                  </Field>
+                  <div className="md:col-span-2">
+                    <Toggle value={newOffer.is_active}
+                      onChange={value => setNewOffer({...newOffer, is_active: value})}
+                      label="Show this offer on the website" />
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-5">
+                  <button onClick={addOffer} disabled={addingOffer}
+                    className="bg-[#735c00] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-50">
+                    {addingOffer ? 'Adding...' : 'Add Offer'}
+                  </button>
+                  <button onClick={() => { setShowAddOffer(false); setNewOffer({ title:'', description:'', badge:'', image_url:'', is_active:true }) }}
+                    className="px-6 py-2.5 rounded-xl text-sm font-semibold text-[#454742] hover:bg-[#f1edec] transition-colors">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {offers.length === 0 && !showAddOffer && (
+              <div className="bg-white border border-[#e5e2e1] rounded-2xl p-10 text-center">
+                <p className="font-serif text-xl font-bold text-[#1c1b1b] mb-2">No offers right now</p>
+                <p className="text-sm text-[#454742]">The storefront automatically hides the Offers section until you add one.</p>
+              </div>
+            )}
+
+            {offers.map(offer => (
+              <div key={offer.id} className="bg-white border border-[#e5e2e1] rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h2 className="font-serif text-lg font-bold text-[#1c1b1b]">{offer.title}</h2>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${offer.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                      {offer.is_active ? 'Active' : 'Hidden'}
+                    </span>
+                  </div>
+                  <button onClick={() => deleteOffer(offer.id)} disabled={deletingOffer === offer.id}
+                    className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all text-xs font-semibold">
+                    {deletingOffer === offer.id ? '...' : 'Delete'}
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="Offer Title">
+                    <input value={offer.title} onChange={e => updateOffer(offer.id, 'title', e.target.value)} className={inp} />
+                  </Field>
+                  <Field label="Badge">
+                    <input value={offer.badge || ''} onChange={e => updateOffer(offer.id, 'badge', e.target.value)} className={inp} />
+                  </Field>
+                  <Field label="Image URL">
+                    <input value={offer.image_url || ''} onChange={e => updateOffer(offer.id, 'image_url', e.target.value)} className={inp} />
+                  </Field>
+                  <Field label="Description">
+                    <textarea value={offer.description || ''} rows={2}
+                      onChange={e => updateOffer(offer.id, 'description', e.target.value)} className={`${inp} resize-none`} />
+                  </Field>
+                  <div className="md:col-span-2">
+                    <Toggle value={offer.is_active} onChange={value => updateOffer(offer.id, 'is_active', value)}
+                      label="Show this offer on the website" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 mt-5">
+                  <button onClick={() => saveOffer(offer)} disabled={savingOffer === offer.id}
+                    className="bg-[#735c00] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-50">
+                    {savingOffer === offer.id ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  {savedOffer === offer.id && <span className="text-sm text-green-600 font-semibold">Saved!</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {tab === 'reviews' && (
           <div className="space-y-6">
 

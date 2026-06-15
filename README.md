@@ -7,7 +7,7 @@ messages.
 ## Features
 
 - Responsive storefront with animated sections
-- Supabase-backed products and reviews
+- Supabase-backed products, optional offers, and reviews
 - Availability controls for products
 - Authenticated admin dashboard at `/admin`
 - WhatsApp ordering links
@@ -33,7 +33,8 @@ Open `http://localhost:3000` for the storefront or
 
 ## Supabase Setup
 
-The app expects `products` and `reviews` tables. Create an admin user in
+The app expects `products` and `reviews` tables. The setup SQL creates the
+optional `offers` table. Create an admin user in
 Supabase Authentication using email/password sign-in.
 
 Assign the admin user's `app_metadata.role` to `admin`, then run
