@@ -7,7 +7,7 @@ messages.
 ## Features
 
 - Responsive storefront with animated sections
-- Supabase-backed products, optional offers, and reviews
+- Supabase-backed products, product-linked optional offers, and reviews
 - Availability controls for products
 - Authenticated admin dashboard at `/admin`
 - WhatsApp ordering links

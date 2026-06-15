@@ -66,8 +66,8 @@ export default function Home() {
   useEffect(() => {
     supabase.from('products').select('*').eq('is_available', true).order('created_at')
       .then(({ data }) => setProducts(data || []))
-    supabase.from('offers').select('*').eq('is_active', true).order('created_at', { ascending: false })
-      .then(({ data }) => setOffers(data || []))
+    supabase.from('offers').select('*, product:products(*)').eq('is_active', true).order('created_at', { ascending: false })
+      .then(({ data }) => setOffers((data || []).filter(offer => offer.product?.is_available)))
     supabase.from('reviews').select('*')
       .then(({ data }) => setReviews(data || []))
   }, [])
@@ -205,8 +205,8 @@ export default function Home() {
                 <FadeIn key={offer.id} delay={i * 100}>
                   <article className="bg-[#fcf8f7] border border-[#e5e2e1] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500 group">
                     <div className="relative aspect-[4/3] overflow-hidden">
-                      {offer.image_url ? (
-                        <Image src={offer.image_url} alt={offer.title} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw"
+                      {offer.product.image_url ? (
+                        <Image src={offer.product.image_url} alt={offer.product.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw"
                           className="object-cover transition-transform duration-700 group-hover:scale-110" />
                       ) : (
                         <div className="w-full h-full bg-[#f1edec] flex items-center justify-center font-serif text-2xl font-bold text-[#735c00]">Special Offer</div>
@@ -216,9 +216,15 @@ export default function Home() {
                       </span>
                     </div>
                     <div className="p-6 text-center">
-                      <h3 className="font-serif text-xl font-bold text-[#1c1b1b] mb-2">{offer.title}</h3>
-                      <p className="text-sm text-[#454742] mb-4">{offer.description}</p>
-                      <a href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Hi! I'd like to claim the "${offer.title}" offer. Is it available?`)}`} target="_blank" rel="noopener noreferrer"
+                      <h3 className="font-serif text-xl font-bold text-[#1c1b1b] mb-2">{offer.product.name}</h3>
+                      <p className="text-sm text-[#454742] mb-4">{offer.description || offer.product.description}</p>
+                      <div className="flex items-center justify-center gap-3 mb-5">
+                        {offer.offer_price && (
+                          <span className="text-sm text-[#767872] line-through">Rs. {offer.product.price?.toLocaleString()}</span>
+                        )}
+                        <span className="text-[#735c00] font-bold">Rs. {(offer.offer_price || offer.product.price)?.toLocaleString()}</span>
+                      </div>
+                      <a href={waLink(offer.product.name, offer.offer_price || offer.product.price)} target="_blank" rel="noopener noreferrer"
                         className="inline-block bg-[#735c00] text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-[#5a4700] active:scale-95 transition-all duration-300">
                         Claim Offer
                       </a>

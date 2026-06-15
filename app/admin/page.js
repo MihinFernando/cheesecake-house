@@ -68,7 +68,7 @@ export default function AdminPage() {
   const [deletingOffer, setDeletingOffer] = useState(null)
   const [showAddOffer, setShowAddOffer] = useState(false)
   const [newOffer, setNewOffer] = useState({
-    title: '', description: '', badge: '', image_url: '', is_active: true
+    product_id: '', description: '', badge: '', offer_price: '', is_active: true
   })
   const [addingOffer, setAddingOffer] = useState(false)
 
@@ -108,7 +108,7 @@ export default function AdminPage() {
 
     Promise.all([
       supabase.from('products').select('*').order('created_at'),
-      supabase.from('offers').select('*').order('created_at', { ascending: false }),
+      supabase.from('offers').select('*, product:products(*)').order('created_at', { ascending: false }),
       supabase.from('reviews').select('*').order('created_at'),
     ]).then(([productsResult, offersResult, reviewsResult]) => {
       setProducts(productsResult.data || [])
@@ -168,10 +168,10 @@ export default function AdminPage() {
   const saveOffer = async (offer) => {
     setSavingOffer(offer.id)
     await supabase.from('offers').update({
-      title: offer.title,
+      product_id: offer.product_id,
       description: offer.description,
       badge: offer.badge,
-      image_url: offer.image_url,
+      offer_price: offer.offer_price ? Number(offer.offer_price) : null,
       is_active: offer.is_active,
     }).eq('id', offer.id)
     setSavingOffer(null)
@@ -188,19 +188,25 @@ export default function AdminPage() {
   }
 
   const addOffer = async () => {
-    if (!newOffer.title) return alert('Offer title is required.')
+    if (!newOffer.product_id) return alert('Please select a product.')
     setAddingOffer(true)
     const { data } = await supabase.from('offers').insert({
-      title: newOffer.title,
+      product_id: newOffer.product_id,
       description: newOffer.description,
       badge: newOffer.badge || null,
-      image_url: newOffer.image_url || null,
+      offer_price: newOffer.offer_price ? Number(newOffer.offer_price) : null,
       is_active: newOffer.is_active,
-    }).select()
+    }).select('*, product:products(*)')
     if (data) setOffers(prev => [...data, ...prev])
-    setNewOffer({ title: '', description: '', badge: '', image_url: '', is_active: true })
+    setNewOffer({ product_id: '', description: '', badge: '', offer_price: '', is_active: true })
     setShowAddOffer(false)
     setAddingOffer(false)
+  }
+
+  const startOfferForProduct = (productId) => {
+    setNewOffer({ product_id: String(productId), description: '', badge: '', offer_price: '', is_active: true })
+    setShowAddOffer(true)
+    setTab('offers')
   }
 
   const updateReview = (id, field, value) =>
@@ -421,6 +427,10 @@ export default function AdminPage() {
                     className="bg-[#735c00] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-50">
                     {saving === product.id ? 'Saving...' : 'Save Changes'}
                   </button>
+                  <button onClick={() => startOfferForProduct(product.id)}
+                    className="border border-[#735c00] text-[#735c00] px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#735c00]/5 transition-colors">
+                    Create Offer
+                  </button>
                   {saved === product.id && <span className="text-sm text-green-600 font-semibold">✓ Saved!</span>}
                 </div>
               </div>
@@ -442,22 +452,24 @@ export default function AdminPage() {
               <div className="bg-white border-2 border-[#735c00]/30 rounded-2xl p-6 shadow-sm">
                 <h2 className="font-serif text-lg font-bold text-[#735c00] mb-5">New Offer</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="Offer Title *">
-                    <input value={newOffer.title} onChange={e => setNewOffer({...newOffer, title: e.target.value})}
-                      placeholder="e.g. Weekend Celebration Box" className={inp} />
+                  <Field label="Product *">
+                    <select value={newOffer.product_id} onChange={e => setNewOffer({...newOffer, product_id: e.target.value})} className={inp}>
+                      <option value="">Select a product</option>
+                      {products.map(product => <option key={product.id} value={product.id}>{product.name}</option>)}
+                    </select>
                   </Field>
                   <Field label="Badge" hint="(e.g. 20% Off, Limited Time)">
                     <input value={newOffer.badge} onChange={e => setNewOffer({...newOffer, badge: e.target.value})}
                       placeholder="Special Offer" className={inp} />
                   </Field>
-                  <Field label="Image URL">
-                    <input value={newOffer.image_url} onChange={e => setNewOffer({...newOffer, image_url: e.target.value})}
-                      placeholder="https://..." className={inp} />
+                  <Field label="Offer Price (Rs.)" hint="(optional)">
+                    <input type="number" value={newOffer.offer_price} onChange={e => setNewOffer({...newOffer, offer_price: e.target.value})}
+                      placeholder="Leave empty to use product price" className={inp} />
                   </Field>
-                  <Field label="Description">
+                  <Field label="Offer Details" hint="(optional)">
                     <textarea value={newOffer.description} rows={2}
                       onChange={e => setNewOffer({...newOffer, description: e.target.value})}
-                      placeholder="Explain what is included in the offer..." className={`${inp} resize-none`} />
+                      placeholder="Leave empty to use product description" className={`${inp} resize-none`} />
                   </Field>
                   <div className="md:col-span-2">
                     <Toggle value={newOffer.is_active}
@@ -470,7 +482,7 @@ export default function AdminPage() {
                     className="bg-[#735c00] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-50">
                     {addingOffer ? 'Adding...' : 'Add Offer'}
                   </button>
-                  <button onClick={() => { setShowAddOffer(false); setNewOffer({ title:'', description:'', badge:'', image_url:'', is_active:true }) }}
+                  <button onClick={() => { setShowAddOffer(false); setNewOffer({ product_id:'', description:'', badge:'', offer_price:'', is_active:true }) }}
                     className="px-6 py-2.5 rounded-xl text-sm font-semibold text-[#454742] hover:bg-[#f1edec] transition-colors">
                     Cancel
                   </button>
@@ -489,7 +501,9 @@ export default function AdminPage() {
               <div key={offer.id} className="bg-white border border-[#e5e2e1] rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <h2 className="font-serif text-lg font-bold text-[#1c1b1b]">{offer.title}</h2>
+                    <h2 className="font-serif text-lg font-bold text-[#1c1b1b]">
+                      {products.find(product => String(product.id) === String(offer.product_id))?.name || offer.product?.name || 'Select a product'}
+                    </h2>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${offer.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
                       {offer.is_active ? 'Active' : 'Hidden'}
                     </span>
@@ -500,18 +514,23 @@ export default function AdminPage() {
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="Offer Title">
-                    <input value={offer.title} onChange={e => updateOffer(offer.id, 'title', e.target.value)} className={inp} />
+                  <Field label="Product">
+                    <select value={offer.product_id || ''} onChange={e => updateOffer(offer.id, 'product_id', e.target.value)} className={inp}>
+                      <option value="">Select a product</option>
+                      {products.map(product => <option key={product.id} value={product.id}>{product.name}</option>)}
+                    </select>
                   </Field>
                   <Field label="Badge">
                     <input value={offer.badge || ''} onChange={e => updateOffer(offer.id, 'badge', e.target.value)} className={inp} />
                   </Field>
-                  <Field label="Image URL">
-                    <input value={offer.image_url || ''} onChange={e => updateOffer(offer.id, 'image_url', e.target.value)} className={inp} />
+                  <Field label="Offer Price (Rs.)" hint="(optional)">
+                    <input type="number" value={offer.offer_price || ''} onChange={e => updateOffer(offer.id, 'offer_price', e.target.value)}
+                      placeholder="Uses product price when empty" className={inp} />
                   </Field>
-                  <Field label="Description">
+                  <Field label="Offer Details" hint="(optional)">
                     <textarea value={offer.description || ''} rows={2}
-                      onChange={e => updateOffer(offer.id, 'description', e.target.value)} className={`${inp} resize-none`} />
+                      onChange={e => updateOffer(offer.id, 'description', e.target.value)}
+                      placeholder="Uses product description when empty" className={`${inp} resize-none`} />
                   </Field>
                   <div className="md:col-span-2">
                     <Toggle value={offer.is_active} onChange={value => updateOffer(offer.id, 'is_active', value)}
