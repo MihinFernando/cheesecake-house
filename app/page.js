@@ -4,6 +4,122 @@ import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 
 const BASE_NAV_LINKS = [['#menu','Menu'],['#reviews','Reviews'],['#contact','Contact']]
+const SIZE_OPTIONS = [
+  { key: 'small', label: 'Small', weight: '500g' },
+  { key: 'medium', label: 'Medium', weight: '1kg' },
+  { key: 'large', label: 'Large', weight: '1.5kg' },
+]
+const MENU_VARIANT_PRICES = {
+  'classic new york cheesecake': [4200, 7500, 10900],
+  'strawberry cheesecake': [4500, 7900, 11500],
+  'blueberry cheesecake': [4500, 7900, 11500],
+  'mixed berry cheesecake': [4800, 8500, 11900],
+  'lemon cheesecake': [4400, 7700, 11200],
+  'pineapple cheesecake': [4400, 7700, 11200],
+  'mango passion fruit cheesecake': [4400, 7700, 11200],
+  'mango & passion fruit cheesecake': [4400, 7700, 11200],
+  'triple layer mixed cheesecake': [4900, 8700, 11900],
+  'double chocolate cheesecake': [4900, 8700, 11900],
+  'toblerone cheesecake': [4900, 8700, 11900],
+  'white chocolate raspberry cheesecake': [4900, 8700, 11900],
+  'nutella strawberry cheesecake': [4900, 8700, 11900],
+  'salted caramel cheesecake': [4200, 7500, 11000],
+  'peanut butter cheesecake': [4500, 7900, 11500],
+  'oreo cheesecake': [4500, 7900, 11500],
+  'kinder bueno cheesecake': [4500, 7900, 11500],
+  'red velvet cake': [4500, 7800, 11500],
+  'tiramisu cake': [4500, 7800, 11500],
+  'basque cheesecake': [5500, 9800, 13800],
+  'japanese cheesecake': [4500, 7800, 11500],
+  'pistachio cheesecake': [4800, 8800, 12500],
+  'biscoff cheesecake': [4800, 8800, 12500],
+}
+
+function normalizeProductName(name = '') {
+  return name
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function getProductVariants(product) {
+  const normalizedName = normalizeProductName(product?.name)
+  const priceEntry = Object.entries(MENU_VARIANT_PRICES).find(([name]) => {
+    const normalizedMenuName = normalizeProductName(name)
+    return normalizedName === normalizedMenuName || normalizedName.includes(normalizedMenuName)
+  })
+
+  if (!priceEntry) {
+    return [{ key: 'standard', label: 'Standard', weight: '', price: product?.price }]
+  }
+
+  return SIZE_OPTIONS.map((size, index) => ({
+    ...size,
+    price: priceEntry[1][index],
+  }))
+}
+
+function ProductCard({ product, delay, waLink }) {
+  const variants = getProductVariants(product)
+  const [selectedVariantKey, setSelectedVariantKey] = useState(variants[0]?.key || 'standard')
+  const selectedVariant = variants.find(variant => variant.key === selectedVariantKey) || variants[0]
+  const hasSizeOptions = variants.length > 1
+  const orderName = hasSizeOptions
+    ? `${product.name} - ${selectedVariant.label} ${selectedVariant.weight}`
+    : product.name
+
+  return (
+    <FadeIn key={product.id} delay={delay} direction="up">
+      <article className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col group cursor-pointer hover:-translate-y-2">
+        <div className="aspect-square overflow-hidden relative">
+          {product.image_url
+            ? <Image src={product.image_url} alt={product.name} fill unoptimized sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            : <div className="w-full h-full bg-[#f1edec] flex items-center justify-center font-serif text-2xl font-bold text-[#735c00]
+                group-hover:scale-110 transition-transform duration-500">Cake</div>
+          }
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-500" />
+          {product.label && (
+            <span className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-[#735c00] text-xs font-bold px-3 py-1 rounded-full border border-[#735c00]/20 shadow-sm">
+              {product.label}
+            </span>
+          )}
+        </div>
+        <div className="p-5 flex flex-col flex-1 items-center text-center">
+          <h3 className="font-serif text-xl font-bold text-[#1c1b1b] mb-2 group-hover:text-[#735c00] transition-colors duration-300">{product.name}</h3>
+          <p className="text-sm text-[#454742] mb-5 flex-1 leading-relaxed">{product.description}</p>
+          {hasSizeOptions && (
+            <label className="w-full text-left text-xs font-bold tracking-widest uppercase text-[#735c00] mb-2">
+              Size
+              <select
+                value={selectedVariantKey}
+                onChange={event => setSelectedVariantKey(event.target.value)}
+                className="mt-2 w-full rounded-full border border-[#d8c8b7] bg-[#fcf8f7] px-4 py-3 text-sm normal-case tracking-normal font-semibold text-[#1c1b1b] outline-none transition focus:border-[#735c00] focus:ring-2 focus:ring-[#735c00]/20"
+              >
+                {variants.map(variant => (
+                  <option key={variant.key} value={variant.key}>
+                    {variant.label} ({variant.weight}) - Rs. {variant.price?.toLocaleString()}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <p className="text-[#735c00] font-bold text-base mb-4">
+            Rs. {selectedVariant?.price?.toLocaleString()}
+          </p>
+          <a href={waLink(orderName, selectedVariant?.price)} target="_blank" rel="noopener noreferrer"
+            className="w-full bg-[#25D366] text-white px-4 py-3 rounded-full text-sm font-bold transition-all duration-300 hover:bg-[#1da851] hover:shadow-lg hover:shadow-[#25D366]/30 active:scale-95 flex items-center justify-center gap-2 group/btn">
+            <svg className="w-4 h-4 transition-transform duration-300 group-hover/btn:rotate-12" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Order via WhatsApp
+          </a>
+        </div>
+      </article>
+    </FadeIn>
+  )
+}
 
 // Hook to detect when element enters viewport
 function useInView(threshold = 0.15) {
@@ -253,36 +369,7 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {visibleProducts.map((p, i) => (
-                <FadeIn key={p.id} delay={i * 100} direction="up">
-                  <article className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col group cursor-pointer hover:-translate-y-2">
-                    <div className="aspect-square overflow-hidden relative">
-                      {p.image_url
-                        ? <Image src={p.image_url} alt={p.name} fill unoptimized sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                        : <div className="w-full h-full bg-[#f1edec] flex items-center justify-center text-6xl
-                            group-hover:scale-110 transition-transform duration-500">🍰</div>
-                      }
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-500" />
-                      {p.label && (
-                        <span className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-[#735c00] text-xs font-bold px-3 py-1 rounded-full border border-[#735c00]/20 shadow-sm">
-                          {p.label}
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-5 flex flex-col flex-1 items-center text-center">
-                      <h3 className="font-serif text-xl font-bold text-[#1c1b1b] mb-2 group-hover:text-[#735c00] transition-colors duration-300">{p.name}</h3>
-                      <p className="text-sm text-[#454742] mb-5 flex-1 leading-relaxed">{p.description}</p>
-                      <p className="text-[#735c00] font-bold text-base mb-4">Rs. {p.price?.toLocaleString()}</p>
-                      <a href={waLink(p.name, p.price)} target="_blank" rel="noopener noreferrer"
-                        className="w-full bg-[#25D366] text-white px-4 py-3 rounded-full text-sm font-bold transition-all duration-300 hover:bg-[#1da851] hover:shadow-lg hover:shadow-[#25D366]/30 active:scale-95 flex items-center justify-center gap-2 group/btn">
-                        <svg className="w-4 h-4 transition-transform duration-300 group-hover/btn:rotate-12" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                        </svg>
-                        Order via WhatsApp
-                      </a>
-                    </div>
-                  </article>
-                </FadeIn>
+                <ProductCard key={p.id} product={p} delay={i * 100} waLink={waLink} />
               ))}
             </div>
           )}
