@@ -3,6 +3,54 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 
+const SIZE_OPTIONS = [
+  { key: 'small', label: 'Small', weight: '500g' },
+  { key: 'medium', label: 'Medium', weight: '1kg' },
+  { key: 'large', label: 'Large', weight: '1.5kg' },
+]
+const MENU_VARIANT_PRICES = {
+  'classic new york cheesecake': [4200, 7500, 10900],
+  'strawberry cheesecake': [4500, 7900, 11500],
+  'blueberry cheesecake': [4500, 7900, 11500],
+  'mixed berry cheesecake': [4800, 8500, 11900],
+  'lemon cheesecake': [4400, 7700, 11200],
+  'pineapple cheesecake': [4400, 7700, 11200],
+  'mango passion fruit cheesecake': [4400, 7700, 11200],
+  'mango & passion fruit cheesecake': [4400, 7700, 11200],
+  'triple layer mixed cheesecake': [4900, 8700, 11900],
+  'double chocolate cheesecake': [4900, 8700, 11900],
+  'toblerone cheesecake': [4900, 8700, 11900],
+  'white chocolate raspberry cheesecake': [4900, 8700, 11900],
+  'nutella strawberry cheesecake': [4900, 8700, 11900],
+  'salted caramel cheesecake': [4200, 7500, 11000],
+  'peanut butter cheesecake': [4500, 7900, 11500],
+  'oreo cheesecake': [4500, 7900, 11500],
+  'kinder bueno cheesecake': [4500, 7900, 11500],
+  'red velvet cake': [4500, 7800, 11500],
+  'tiramisu cake': [4500, 7800, 11500],
+  'basque cheesecake': [5500, 9800, 13800],
+  'japanese cheesecake': [4500, 7800, 11500],
+  'pistachio cheesecake': [4800, 8800, 12500],
+  'biscoff cheesecake': [4800, 8800, 12500],
+}
+
+function normalizeProductName(name = '') {
+  return name
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function getFallbackVariantPrices(product) {
+  const normalizedName = normalizeProductName(product?.name)
+  const priceEntry = Object.entries(MENU_VARIANT_PRICES).find(([name]) => {
+    const normalizedMenuName = normalizeProductName(name)
+    return normalizedName === normalizedMenuName || normalizedName.includes(normalizedMenuName)
+  })
+  return priceEntry?.[1] || []
+}
+
 // ── small reusable input components ──────────────────────────────
 function Field({ label, hint, children }) {
   return (
@@ -52,6 +100,9 @@ export default function AdminPage() {
 
   // products state
   const [products, setProducts]   = useState([])
+  const [productVariants, setProductVariants] = useState([])
+  const [savingVariants, setSavingVariants] = useState(null)
+  const [savedVariants, setSavedVariants] = useState(null)
   const [saving, setSaving]       = useState(null)
   const [saved, setSaved]         = useState(null)
   const [deleting, setDeleting]   = useState(null)
@@ -81,6 +132,14 @@ export default function AdminPage() {
   const [newReview, setNewReview] = useState({ reviewer_name: '', review_text: '' })
   const [addingReview, setAddingReview]   = useState(false)
 
+  // gallery state
+  const [galleryImages, setGalleryImages] = useState([])
+  const [uploadingGallery, setUploadingGallery] = useState(false)
+  const [savingGallery, setSavingGallery] = useState(null)
+  const [savedGallery, setSavedGallery] = useState(null)
+  const [deletingGallery, setDeletingGallery] = useState(null)
+  const [newGallery, setNewGallery] = useState({ caption: '', alt_text: '', sort_order: 0, is_visible: true })
+
   const handleLogin = async (e) => {
     e.preventDefault()
     setAuthLoading(true)
@@ -108,12 +167,16 @@ export default function AdminPage() {
 
     Promise.all([
       supabase.from('products').select('*').order('created_at'),
+      supabase.from('product_variants').select('*').order('sort_order'),
       supabase.from('offers').select('*, product:products(*)').order('created_at', { ascending: false }),
       supabase.from('reviews').select('*').order('created_at'),
-    ]).then(([productsResult, offersResult, reviewsResult]) => {
+      supabase.from('gallery_images').select('*').order('sort_order'),
+    ]).then(([productsResult, variantsResult, offersResult, reviewsResult, galleryResult]) => {
       setProducts(productsResult.data || [])
+      setProductVariants(variantsResult.data || [])
       setOffers(offersResult.data || [])
       setReviews(reviewsResult.data || [])
+      setGalleryImages(galleryResult.data || [])
     })
   }, [session])
 
@@ -159,6 +222,78 @@ export default function AdminPage() {
     setNewProduct({ name: '', description: '', price: '', image_url: '', label: '', is_available: true })
     setShowAddProduct(false)
     setAddingProduct(false)
+  }
+
+  const getProductVariantRows = (product) => {
+    const existingRows = productVariants.filter(variant => String(variant.product_id) === String(product.id))
+    const fallbackPrices = getFallbackVariantPrices(product)
+
+    return SIZE_OPTIONS.map((size, index) => {
+      const existing = existingRows.find(variant => variant.size_key === size.key)
+      return existing || {
+        id: `new-${product.id}-${size.key}`,
+        product_id: product.id,
+        size_key: size.key,
+        label: size.label,
+        weight: size.weight,
+        price: fallbackPrices[index] || '',
+        sort_order: index,
+        is_available: true,
+      }
+    })
+  }
+
+  const updateProductVariant = (productId, size, field, value) => {
+    setProductVariants(prev => {
+      const existing = prev.find(variant => String(variant.product_id) === String(productId) && variant.size_key === size.key)
+      if (existing) {
+        return prev.map(variant => variant === existing ? { ...variant, [field]: value } : variant)
+      }
+      return [
+        ...prev,
+        {
+          id: `new-${productId}-${size.key}`,
+          product_id: productId,
+          size_key: size.key,
+          label: size.label,
+          weight: size.weight,
+          price: value,
+          sort_order: SIZE_OPTIONS.findIndex(option => option.key === size.key),
+          is_available: true,
+        },
+      ]
+    })
+  }
+
+  const saveProductVariants = async (product) => {
+    const rows = getProductVariantRows(product)
+    if (rows.some(row => row.price === '' || row.price === null || Number.isNaN(Number(row.price)))) {
+      return alert('Please add valid prices for Small, Medium, and Large.')
+    }
+
+    setSavingVariants(product.id)
+    const payload = rows.map(row => ({
+      product_id: product.id,
+      size_key: row.size_key,
+      label: row.label,
+      weight: row.weight,
+      price: Number(row.price),
+      sort_order: row.sort_order,
+      is_available: row.is_available !== false,
+    }))
+    const { data, error } = await supabase
+      .from('product_variants')
+      .upsert(payload, { onConflict: 'product_id,size_key' })
+      .select()
+
+    setSavingVariants(null)
+    if (error) return alert(error.message)
+    setProductVariants(prev => [
+      ...prev.filter(variant => String(variant.product_id) !== String(product.id)),
+      ...(data || []),
+    ])
+    setSavedVariants(product.id)
+    setTimeout(() => setSavedVariants(null), 2000)
   }
 
   // ── REVIEW actions ─────────────────────────────────────────────
@@ -244,6 +379,75 @@ export default function AdminPage() {
     setAddingReview(false)
   }
 
+  const uploadGalleryImage = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setUploadingGallery(true)
+
+    const extension = file.name.split('.').pop() || 'jpg'
+    const safeName = file.name
+      .replace(/\.[^/.]+$/, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+    const filePath = `gallery/${Date.now()}-${safeName || 'image'}.${extension}`
+    const { error: uploadError } = await supabase.storage
+      .from('images')
+      .upload(filePath, file, { contentType: file.type, upsert: false })
+
+    if (uploadError) {
+      setUploadingGallery(false)
+      event.target.value = ''
+      return alert(uploadError.message)
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(filePath)
+    const { data, error } = await supabase.from('gallery_images').insert({
+      image_url: publicUrlData.publicUrl,
+      caption: newGallery.caption || null,
+      alt_text: newGallery.alt_text || newGallery.caption || null,
+      sort_order: Number(newGallery.sort_order) || 0,
+      is_visible: newGallery.is_visible,
+    }).select()
+
+    setUploadingGallery(false)
+    event.target.value = ''
+    if (error) return alert(error.message)
+    if (data) setGalleryImages(prev => [...data, ...prev])
+    setNewGallery({ caption: '', alt_text: '', sort_order: 0, is_visible: true })
+  }
+
+  const updateGalleryImage = (id, field, value) =>
+    setGalleryImages(prev => prev.map(image => image.id === id ? { ...image, [field]: value } : image))
+
+  const saveGalleryImage = async (image) => {
+    setSavingGallery(image.id)
+    const { error } = await supabase.from('gallery_images').update({
+      caption: image.caption,
+      alt_text: image.alt_text,
+      sort_order: Number(image.sort_order) || 0,
+      is_visible: image.is_visible,
+    }).eq('id', image.id)
+    setSavingGallery(null)
+    if (error) return alert(error.message)
+    setSavedGallery(image.id)
+    setTimeout(() => setSavedGallery(null), 2000)
+  }
+
+  const deleteGalleryImage = async (image) => {
+    if (!confirm('Delete this gallery image?')) return
+    setDeletingGallery(image.id)
+    const marker = '/images/'
+    const path = image.image_url?.includes(marker)
+      ? decodeURIComponent(image.image_url.split(marker)[1].split('?')[0])
+      : ''
+    if (path) await supabase.storage.from('images').remove([path])
+    const { error } = await supabase.from('gallery_images').delete().eq('id', image.id)
+    setDeletingGallery(null)
+    if (error) return alert(error.message)
+    setGalleryImages(prev => prev.filter(item => item.id !== image.id))
+  }
+
   // ── LOGIN SCREEN ───────────────────────────────────────────────
   if (authLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#f7f3f2] text-[#735c00] font-semibold">
@@ -301,7 +505,7 @@ export default function AdminPage() {
       <div className="max-w-4xl mx-auto py-8 px-6 md:px-0">
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-8 bg-white p-1.5 rounded-2xl border border-[#e5e2e1] w-fit">
+        <div className="flex flex-wrap gap-2 mb-8 bg-white p-1.5 rounded-2xl border border-[#e5e2e1] w-fit">
           <Tab active={tab === 'products'} onClick={() => setTab('products')}>
             🍰 Products ({products.length})
           </Tab>
@@ -310,6 +514,9 @@ export default function AdminPage() {
           </Tab>
           <Tab active={tab === 'reviews'} onClick={() => setTab('reviews')}>
             ⭐ Reviews ({reviews.length})
+          </Tab>
+          <Tab active={tab === 'gallery'} onClick={() => setTab('gallery')}>
+            Gallery ({galleryImages.length})
           </Tab>
         </div>
 
@@ -420,6 +627,32 @@ export default function AdminPage() {
                       onChange={v => updateProduct(product.id, 'is_available', v)}
                       label="Show on website" />
                   </div>
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-[#e5e2e1] bg-[#fcf8f7] p-4">
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div>
+                      <p className="text-sm font-bold text-[#1c1b1b]">Menu size prices</p>
+                      <p className="text-xs text-[#767872]">These prices power the Small, Medium, and Large dropdown on the website.</p>
+                    </div>
+                    <button onClick={() => saveProductVariants(product)} disabled={savingVariants === product.id}
+                      className="bg-[#735c00] text-white px-4 py-2 rounded-xl text-xs font-semibold hover:opacity-80 transition-opacity disabled:opacity-50">
+                      {savingVariants === product.id ? 'Saving...' : 'Save Sizes'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {getProductVariantRows(product).map(variant => {
+                      const size = SIZE_OPTIONS.find(option => option.key === variant.size_key) || SIZE_OPTIONS[0]
+                      return (
+                        <Field key={variant.size_key} label={`${variant.label} (${variant.weight})`}>
+                          <input type="number" value={variant.price}
+                            onChange={e => updateProductVariant(product.id, size, 'price', e.target.value)}
+                            placeholder="Price" className={inp} />
+                        </Field>
+                      )
+                    })}
+                  </div>
+                  {savedVariants === product.id && <p className="text-sm text-green-600 font-semibold mt-3">Sizes saved!</p>}
                 </div>
 
                 <div className="flex items-center gap-3 mt-5">
@@ -546,6 +779,85 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {tab === 'gallery' && (
+          <div className="space-y-6">
+            <div className="bg-white border border-[#e5e2e1] rounded-2xl p-6 shadow-sm">
+              <h2 className="font-serif text-lg font-bold text-[#735c00] mb-5">Upload Gallery Image</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Caption">
+                  <input value={newGallery.caption} onChange={e => setNewGallery({...newGallery, caption: e.target.value})}
+                    placeholder="e.g. Strawberry cheesecake order" className={inp} />
+                </Field>
+                <Field label="Alt Text" hint="(optional)">
+                  <input value={newGallery.alt_text} onChange={e => setNewGallery({...newGallery, alt_text: e.target.value})}
+                    placeholder="Short image description" className={inp} />
+                </Field>
+                <Field label="Sort Order">
+                  <input type="number" value={newGallery.sort_order} onChange={e => setNewGallery({...newGallery, sort_order: e.target.value})}
+                    className={inp} />
+                </Field>
+                <div className="flex items-end">
+                  <Toggle value={newGallery.is_visible}
+                    onChange={value => setNewGallery({...newGallery, is_visible: value})}
+                    label="Show on website" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="w-full border-2 border-dashed border-[#735c00]/30 rounded-2xl py-5 text-[#735c00] font-semibold text-sm hover:border-[#735c00]/60 hover:bg-[#735c00]/5 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer">
+                    <span className="text-xl">+</span> {uploadingGallery ? 'Uploading...' : 'Choose Image to Upload'}
+                    <input type="file" accept="image/*" onChange={uploadGalleryImage} disabled={uploadingGallery} className="hidden" />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {galleryImages.length === 0 && (
+              <div className="bg-white border border-[#e5e2e1] rounded-2xl p-10 text-center">
+                <p className="font-serif text-xl font-bold text-[#1c1b1b] mb-2">No gallery images yet</p>
+                <p className="text-sm text-[#454742]">Upload photos here and they will appear in the website gallery.</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {galleryImages.map(image => (
+                <div key={image.id} className="bg-white border border-[#e5e2e1] rounded-2xl overflow-hidden shadow-sm">
+                  <div className="relative aspect-[4/3] bg-[#f1edec]">
+                    <Image src={image.image_url} alt={image.alt_text || image.caption || 'Gallery image'}
+                      fill unoptimized sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
+                  </div>
+                  <div className="p-5 space-y-4">
+                    <Field label="Caption">
+                      <input value={image.caption || ''} onChange={e => updateGalleryImage(image.id, 'caption', e.target.value)}
+                        className={inp} />
+                    </Field>
+                    <Field label="Alt Text">
+                      <input value={image.alt_text || ''} onChange={e => updateGalleryImage(image.id, 'alt_text', e.target.value)}
+                        className={inp} />
+                    </Field>
+                    <Field label="Sort Order">
+                      <input type="number" value={image.sort_order || 0} onChange={e => updateGalleryImage(image.id, 'sort_order', e.target.value)}
+                        className={inp} />
+                    </Field>
+                    <Toggle value={image.is_visible}
+                      onChange={value => updateGalleryImage(image.id, 'is_visible', value)}
+                      label="Show on website" />
+                    <div className="flex items-center gap-3 pt-1">
+                      <button onClick={() => saveGalleryImage(image)} disabled={savingGallery === image.id}
+                        className="bg-[#735c00] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-50">
+                        {savingGallery === image.id ? 'Saving...' : 'Save'}
+                      </button>
+                      <button onClick={() => deleteGalleryImage(image)} disabled={deletingGallery === image.id}
+                        className="text-red-500 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors disabled:opacity-50">
+                        {deletingGallery === image.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                      {savedGallery === image.id && <span className="text-sm text-green-600 font-semibold">Saved!</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
